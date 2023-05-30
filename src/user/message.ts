@@ -39,4 +39,26 @@ router.post("/chats", express.json(), async (req, res) => {
   }
 });
 
+router.post("/group-chats", express.json(), async (req, res) => {
+  try {
+    const db = await getDbClient();
+
+    const { to } = req.body;
+    const _chats = await db.collection("messages").find({
+      to,
+    });
+    return res.status(200).json({
+      chats: await _chats.toArray(),
+    });
+  } catch (error: any) {
+    console.error(error);
+    if (error instanceof CustomError) {
+      return res.status(400).send(error.message);
+    } else if (error instanceof yup.ValidationError) {
+      return res.status(400).send(error.errors);
+    }
+    return res.status(500).send("Internal Error");
+  }
+});
+
 export default router;

@@ -7,6 +7,7 @@ import { verify } from "jsonwebtoken";
 import { decodeUserToken } from "./utils/decodeUserToken";
 import { getDbClient } from "./utils/getDbClient";
 import group from "./user/group";
+import { addUserToGroupRoom } from "./utils/addUserToGroupRoom";
 
 const app = express();
 const server = http.createServer(app);
@@ -26,11 +27,36 @@ io.on("connection", (socket: any) => {
   }
   const email = decodeUserToken(token);
 
+  addUserToGroupRoom(email, socket);
+
   //join private room
   socket.join(email);
 
   socket.on("disconnect", () => {
     console.log("Disconnected");
+  });
+  socket.on("group_message", async (args: any) => {
+    const { content, to, token } = args as any;
+    const email = decodeUserToken(token);
+
+    const db = await getDbClient();
+    const user = await db.collection("users").findOne({ email });
+    if (!user) return;
+    await db.collection("messages").insertOne({
+      content,
+      from: email,
+      to,
+      username: user.username,
+      timestamp: Date.now(),
+    });
+
+    io.to(to).emit("group_message", {
+      content,
+      from: email,
+      to,
+      timestamp: Date.now(),
+      username: user.username,
+    });
   });
 
   socket.on("private_message", async (args: any) => {
