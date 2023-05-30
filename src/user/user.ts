@@ -6,7 +6,7 @@ import { compare, hash } from "bcrypt";
 import { sign } from "jsonwebtoken";
 const router = express.Router();
 
-const JWT_SECRET = "-10293-019FKJAKLDJFAIWEU09328904";
+export const JWT_SECRET = "-10293-019FKJAKLDJFAIWEU09328904";
 
 router.post("/sign-up", express.json(), async (req, res) => {
   try {
@@ -32,7 +32,7 @@ router.post("/sign-up", express.json(), async (req, res) => {
       password: await hash(userDetails.password, 10),
     });
     return res.status(200).json({
-      token: sign({ email: userDetails }, JWT_SECRET),
+      token: sign({ email: userDetails.email }, JWT_SECRET),
     });
   } catch (error: any) {
     if (error instanceof CustomError) {
@@ -73,6 +73,27 @@ router.post("/log-in", express.json(), async (req, res) => {
       token: sign({ email }, JWT_SECRET),
     });
   } catch (error: any) {
+    if (error instanceof CustomError) {
+      return res.status(400).send(error.message);
+    } else if (error instanceof yup.ValidationError) {
+      return res.status(400).send(error.errors);
+    }
+    return res.status(500).send("Internal Error");
+  }
+});
+
+router.get("/users", async (req, res) => {
+  try {
+    const db = await getDbClient();
+    const usersArray = await db.collection("users").find();
+    return res.status(200).json({
+      users: (await usersArray.toArray()).map((i) => {
+        delete i.password;
+        return i;
+      }),
+    });
+  } catch (error: any) {
+    console.error(error);
     if (error instanceof CustomError) {
       return res.status(400).send(error.message);
     } else if (error instanceof yup.ValidationError) {
