@@ -8,6 +8,7 @@ import { decodeUserToken } from "./utils/decodeUserToken";
 import { getDbClient } from "./utils/getDbClient";
 import group from "./user/group";
 import { addUserToGroupRoom } from "./utils/addUserToGroupRoom";
+import journal from "./user/journal";
 
 const app = express();
 const server = http.createServer(app);
@@ -94,6 +95,7 @@ app.get("/", (req, res) => {
 app.use("/user", user);
 app.use("/message", message);
 app.use("/group", group);
+app.use("/journal", journal);
 
 const PORT = 8080;
 server.listen(PORT, () => console.log(`Listening on PORT ${PORT}`));
